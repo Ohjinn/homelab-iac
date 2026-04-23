@@ -1,0 +1,32 @@
+name: Proxmox Terraform Deploy
+
+on:
+  push:
+    branches: [ main ] # 메인 브랜치에 코드가 푸시될 때 실행
+
+jobs:
+  terraform:
+    name: 'Terraform Plan & Apply'
+    runs-on: self-hosted
+    
+    env:
+      # GitHub Secrets에 등록한 값을 테라폼 변수로 매핑
+      TF_VAR_proxmox_api_token_id: ${{ secrets.PROXMOX_API_TOKEN_ID }}
+      TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_API_TOKEN_SECRET }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        # Rocky 9 러너에 이미 테라폼이 설치되어 있다면 이 단계는 생략 가능합니다.
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
