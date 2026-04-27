@@ -10,16 +10,17 @@ jobs:
     runs-on: self-hosted
     
     env:
-      # GitHub Secrets에 등록한 값을 테라폼 변수로 매핑
+      # 💡 GitHub Secrets에 등록한 4개의 값을 모두 테라폼 변수로 매핑
+      TF_VAR_proxmox_api_url: ${{ secrets.PROXMOX_API_URL }}
       TF_VAR_proxmox_api_token_id: ${{ secrets.PROXMOX_API_TOKEN_ID }}
       TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_API_TOKEN_SECRET }}
+      TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        # Rocky 9 러너에 이미 테라폼이 설치되어 있다면 이 단계는 생략 가능합니다.
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
@@ -28,5 +29,7 @@ jobs:
       - name: Terraform Plan
         run: terraform plan
 
+      # 주의: 실무에서는 -auto-approve를 빼고 리뷰 단계를 거치지만, 
+      # 1인 자동화 홈랩에서는 아주 훌륭하고 빠른 배포 방식입니다.
       - name: Terraform Apply
         run: terraform apply -auto-approve

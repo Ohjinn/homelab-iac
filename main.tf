@@ -1,15 +1,63 @@
-resource "proxmox_vm_qemu" "home_assistant" {
-  name        = "ha-core-01"
-  target_node = "pve"
-  vmid        = 301
-  
-  # HASSOS 템플릿 (미리 이미지를 임포트해두어야 합니다)
-  clone = "hassos-template"
+terraform {
+  required_providers {
+    proxmox = {
+      source  = "Telmate/proxmox"
+      version = "3.0.1-rc1"
+    }
+  }
+}
+
+provider "proxmox" {
+  pm_api_url          = var.proxmox_api_url
+  pm_api_token_id     = var.proxmox_api_token_id
+  pm_api_token_secret = var.proxmox_api_token_secret
+  pm_tls_insecure     = true
+}
+
+# [리소스 1] K3s 마스터 노드 (Rocky 9 기반)
+resource "proxmox_vm_qemu" "k3s_master" {
+  name        = "k3s-master-01"
+  target_node = var.target_node
+  vmid        = 201
+  clone       = "rocky9-template"
 
   agent   = 1
   cores   = 2
+  sockets = 1
+  memory  = 4096
+
+  network {
+    model  = "virtio"
+    bridge = "vmbr0"
+  }
+
+  disk {
+    type    = "scsi"
+    storage = "local-lvm"
+    size    = "20G"
+  }
+
+  os_type = "cloud-init"
+  ciuser  = var.runner_user
+  sshkeys = <<EOF
+${var.ssh_public_key}
+EOF
+}
+
+# [리소스 2] Home Assistant 서버 (HASSOS 기반)
+resource "proxmox_vm_qemu" "home_assistant" {
+  name        = "ha-core-01"
+  target_node = var.target_node
+  vmid        = 301
+  clone       = "hassos-template" # 아까 qm importdisk로 만든 템플릿 이름
+
+  agent   = 1
+  cores   = 2
+  sockets = 1
   memory  = 2048
-  balloon = 1024
+
+  # HASSOS는 UEFI(OVMF) 부팅이 필수입니다.
+  bios = "ovmf"
 
   network {
     model  = "virtio"
@@ -21,9 +69,4 @@ resource "proxmox_vm_qemu" "home_assistant" {
     storage = "local-lvm"
     size    = "32G"
   }
-
-  # 전동커튼용 Zigbee 동글을 위한 USB 패스스루 설정 (필요 시)
-  # usb {
-  #   host = "0000:0000" # 실제 동글의 ID로 수정
-  # }
 }
