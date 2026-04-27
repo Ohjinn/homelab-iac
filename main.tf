@@ -19,7 +19,7 @@ resource "proxmox_vm_qemu" "k3s_master" {
     scsi {
       scsi0 {
         disk {
-          size    = "20G"
+          size    = "20"
           storage = "local-lvm"
         }
       }
@@ -57,7 +57,7 @@ resource "proxmox_vm_qemu" "home_assistant" {
     scsi {
       scsi0 {
         disk {
-          size    = "20G"
+          size    = "20"
           storage = "local-lvm"
         }
       }
