@@ -14,15 +14,15 @@ resource "proxmox_vm_qemu" "k3s_master" {
     type = "serial0"
   }
 
-  agent   = 1
+  agent = 1
   cpu {
     cores   = 2
     sockets = 1
   }
-  memory  = 4096
+  memory = 4096
 
   network {
-    id = 0
+    id     = 0
     model  = "virtio"
     bridge = "vmbr0"
   }
@@ -36,7 +36,15 @@ resource "proxmox_vm_qemu" "k3s_master" {
         }
       }
     }
+    ide {
+      ide2 {
+        cloudinit {
+          storage = "local-lvm"
+        }
+      }
+    }
   }
+
 
   os_type = "cloud-init"
   ciuser  = var.runner_user
@@ -52,18 +60,18 @@ resource "proxmox_vm_qemu" "home_assistant" {
   vmid        = 301
   clone       = "hassos-template" # 아까 qm importdisk로 만든 템플릿 이름
 
-  agent   = 1
+  agent = 1
   cpu {
     cores   = 2
     sockets = 1
   }
-  memory  = 2048
+  memory = 2048
 
   # HASSOS는 UEFI(OVMF) 부팅이 필수입니다.
   bios = "ovmf"
 
   network {
-    id = 0
+    id     = 0
     model  = "virtio"
     bridge = "vmbr0"
   }
