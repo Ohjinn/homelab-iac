@@ -15,10 +15,15 @@ resource "proxmox_vm_qemu" "k3s_master" {
     bridge = "vmbr0"
   }
 
-  disk {
-    type    = "scsi"
-    storage = "local-lvm"
-    size    = "20G"
+  disks {
+    scsi {
+      scsi0 {
+        disk {
+          size    = "20"
+          storage = "local-lvm"
+        }
+      }
+    }
   }
 
   os_type = "cloud-init"
@@ -48,9 +53,14 @@ resource "proxmox_vm_qemu" "home_assistant" {
     bridge = "vmbr0"
   }
 
-  disk {
-    type    = "scsi"
-    storage = "local-lvm"
-    size    = "32G"
+  disks {
+    scsi {
+      scsi0 {
+        disk {
+          size    = "20"
+          storage = "local-lvm"
+        }
+      }
+    }
   }
 }
