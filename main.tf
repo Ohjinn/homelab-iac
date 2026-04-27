@@ -5,6 +5,15 @@ resource "proxmox_vm_qemu" "k3s_master" {
   vmid        = 201
   clone       = "rocky9-template"
 
+  scsihw = "virtio-scsi-pci"
+  serial {
+    id   = 0
+    type = "socket"
+  }
+  vga {
+    type = "serial0"
+  }
+
   agent   = 1
   cpu {
     cores   = 2
