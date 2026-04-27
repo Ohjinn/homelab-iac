@@ -6,11 +6,14 @@ resource "proxmox_vm_qemu" "k3s_master" {
   clone       = "rocky9-template"
 
   agent   = 1
-  cores   = 2
-  sockets = 1
+  cpu {
+    cores   = 2
+    sockets = 1
+  }
   memory  = 4096
 
   network {
+    id = 0
     model  = "virtio"
     bridge = "vmbr0"
   }
@@ -41,14 +44,17 @@ resource "proxmox_vm_qemu" "home_assistant" {
   clone       = "hassos-template" # 아까 qm importdisk로 만든 템플릿 이름
 
   agent   = 1
-  cores   = 2
-  sockets = 1
+  cpu {
+    cores   = 2
+    sockets = 1
+  }
   memory  = 2048
 
   # HASSOS는 UEFI(OVMF) 부팅이 필수입니다.
   bios = "ovmf"
 
   network {
+    id = 0
     model  = "virtio"
     bridge = "vmbr0"
   }
