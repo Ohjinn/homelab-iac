@@ -71,6 +71,9 @@ resource "proxmox_vm_qemu" "home_assistant" {
   bios    = "ovmf"
   machine = "q35"
 
+  scsihw = "virtio-scsi-pci"
+  boot   = "order=scsi0"
+
   network {
     id     = 0
     model  = "virtio"
