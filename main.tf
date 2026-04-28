@@ -68,10 +68,8 @@ resource "proxmox_vm_qemu" "home_assistant" {
   memory = 2048
 
   # HASSOS는 UEFI(OVMF) 부팅이 필수입니다.
-  # bios    = "ovmf"
-  bios    = "seabios"
-  # machine = "q35"
-  machine = "pc"
+  bios    = "ovmf"
+  machine = "q35"
 
   scsihw = "virtio-scsi-pci"
   boot   = "order=scsi0"
@@ -83,9 +81,9 @@ resource "proxmox_vm_qemu" "home_assistant" {
   }
 
 
-  # efidisk {
-  #   storage = "local-lvm"
-  # }
+  efidisk {
+    storage = "local-lvm"
+  }
 
   disks {
     scsi {
