@@ -51,6 +51,11 @@ resource "proxmox_vm_qemu" "k3s_master" {
   sshkeys = <<EOF
 ${var.ssh_public_key}
 EOF
+
+  # provider bug: calling qm start on already-running VM after any config change
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 # [리소스 2] Home Assistant 서버 (HASSOS 기반)
@@ -85,14 +90,8 @@ resource "proxmox_vm_qemu" "home_assistant" {
     storage = "local-lvm"
   }
 
-  # disks {
-  #   scsi {
-  #     scsi0 {
-  #       disk {
-  #         size    = "20"
-  #         storage = "local-lvm"
-  #       }
-  #     }
-  #   }
-  # }
+  # scsi0 comes from the hassos-template clone — Terraform must not delete it
+  lifecycle {
+    ignore_changes = [disks]
+  }
 }
