@@ -6,9 +6,9 @@ on:
 
 jobs:
   terraform:
-    name: 'Terraform Plan & Apply'
+    name: "Terraform Plan & Apply"
     runs-on: self-hosted # self-hosted runner
-    
+
     env:
       TF_VAR_proxmox_api_url: ${{ secrets.PROXMOX_API_URL }}
       TF_VAR_proxmox_api_token_id: ${{ secrets.PROXMOX_API_TOKEN_ID }}
@@ -18,6 +18,10 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+        # cache reset
+      - name: Clean up old Terraform cache
+        run: rm -rf .terraform .terraform.lock.hcl
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
