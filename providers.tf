@@ -1,4 +1,13 @@
 terraform {
+  # HCP Terraform 클라우드를 백엔드로 사용합니다.
+  cloud {
+    organization = "hojin-lab"
+
+    workspaces {
+      name = "proxmox-homelab"
+    }
+  }
+
   required_providers {
     proxmox = {
       source  = "telmate/proxmox"
