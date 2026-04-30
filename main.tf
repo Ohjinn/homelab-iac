@@ -85,14 +85,14 @@ resource "proxmox_vm_qemu" "home_assistant" {
     storage = "local-lvm"
   }
 
-  disks {
-    scsi {
-      scsi0 {
-        # disk {
-        #   size    = "20"
-        #   storage = "local-lvm"
-        # }
-      }
-    }
-  }
+  # disks {
+  #   scsi {
+  #     scsi0 {
+  #       disk {
+  #         size    = "20"
+  #         storage = "local-lvm"
+  #       }
+  #     }
+  #   }
+  # }
 }
