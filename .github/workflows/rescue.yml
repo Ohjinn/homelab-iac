@@ -1,0 +1,19 @@
+name: Rescue Proxmox
+
+# 수동으로 버튼을 눌러서 실행할 수 있게 만듭니다.
+on: [workflow_dispatch]
+
+jobs:
+  rescue:
+    runs-on: self-hosted
+    steps:
+      - name: Ping Proxmox Gateway
+        # 💡 아래 192.168.X.X 자리에 원래 Proxmox가 쓰던 내부 IP를 넣으세요!
+        run: ping -c 4 192.168.0.100 || true
+
+      - name: Check Proxmox Web UI Port
+        run: curl -k -I https://192.168.0.100:8006 || echo "Web UI is down or IP changed"
+
+      - name: Scan Local Network for Proxmox (IP 찾기)
+        # 공유기가 IP를 바꿨을 경우를 대비해 192.168.0.x 대역을 훑어버립니다. (대역이 다르면 수정하세요)
+        run: arp -a
