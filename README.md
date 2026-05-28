@@ -144,3 +144,15 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for documented issues and root caus
 4. Run `terraform apply` to apply
 
 > **Note:** This project uses HCP Terraform Cloud as the backend. You will need a free HCP Terraform account and a workspace configured to run locally.
+
+## Runner Bootstrap
+
+The GitHub Actions self-hosted runner (LXC `github-runner-01`) requires manual bootstrapping after creation, as LXC containers do not support cloud-init.
+
+After the LXC is created via `terraform apply`, SSH into the runner and run:
+
+```bash
+bash bootstrap.sh
+```
+
+This installs: `unzip`, `nodejs`, `curl`, `wget`, `git`, `terraform`
