@@ -3,17 +3,20 @@ name: Proxmox Terraform Deploy
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  terraform:
-    name: "Terraform Plan & Apply"
-    runs-on: self-hosted # self-hosted runner
+  plan:
+    name: "Terraform Plan"
+    runs-on: self-hosted
 
     env:
       TF_VAR_proxmox_api_url: ${{ secrets.PROXMOX_API_URL }}
       TF_VAR_proxmox_api_token_id: ${{ secrets.PROXMOX_API_TOKEN_ID }}
       TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_API_TOKEN_SECRET }}
       TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+      TF_VAR_runner_password: ${{ secrets.RUNNER_PASSWORD }}
 
     steps:
       - name: Checkout Code
@@ -26,7 +29,6 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.13.0"
-          # HCP Terraform cloud access token for Terraform CLI authentication
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Terraform Init
@@ -34,6 +36,36 @@ jobs:
 
       - name: Terraform Plan
         run: terraform plan
+
+  apply:
+    name: "Terraform Apply"
+    runs-on: self-hosted
+    needs: plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    env:
+      TF_VAR_proxmox_api_url: ${{ secrets.PROXMOX_API_URL }}
+      TF_VAR_proxmox_api_token_id: ${{ secrets.PROXMOX_API_TOKEN_ID }}
+      TF_VAR_proxmox_api_token_secret: ${{ secrets.PROXMOX_API_TOKEN_SECRET }}
+      TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+      TF_VAR_runner_password: ${{ secrets.RUNNER_PASSWORD }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Clean up Terraform cache
+        run: rm -rf .terraform .terraform.lock.hcl
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.0"
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        run: terraform init -upgrade
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
