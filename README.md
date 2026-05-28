@@ -63,6 +63,7 @@ Manages VM/LXC provisioning via Terraform, with GitOps-based CD through ArgoCD (
 | Host | IP | Role |
 |---|---|---|
 | Gateway (ipTIME BE3600M) | 192.168.0.1 | Router |
+| Hub (guestroom) | 192.168.0.254 | LAN switch for Mac, desktop |
 | Proxmox VE | 192.168.0.200 | Hypervisor |
 | k3s-master-01 | 192.168.0.151 | Kubernetes control plane |
 | GitHub Runner (LXC) | 192.168.0.101 | CI self-hosted runner |
