@@ -29,7 +29,7 @@ variable "ssh_public_key" {
 
 variable "runner_user" {
   type        = string
-  default     = "runner-user"
+  default     = "hojin"
   description = "Cloud-init으로 생성할 기본 계정"
 }
 
