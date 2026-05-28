@@ -143,4 +143,11 @@ resource "proxmox_lxc" "github_runner" {
   features {
     nesting = true
   }
+
+  lifecycle {
+    ignore_changes = [
+      password,
+      ssh_public_keys,
+    ]
+  }
 }
