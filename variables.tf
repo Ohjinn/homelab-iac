@@ -32,3 +32,9 @@ variable "runner_user" {
   default     = "runner-user"
   description = "Cloud-init으로 생성할 기본 계정"
 }
+
+variable "runner_password" {
+  type        = string
+  description = "runner-user 계정의 비밀번호"
+  sensitive   = true
+}
