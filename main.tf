@@ -202,3 +202,58 @@ resource "proxmox_lxc" "dns" {
     ]
   }
 }
+
+# Tailscale exit node (LXC 기반)
+#
+# 해외에서 한국 IP 로 나가기 위한 출구. 클라이언트가 exit node 로 지정하면
+# 인터넷 트래픽이 집을 거쳐 나간다. subnet router 가 아니므로 내부망
+# 192.168.0.0/24 는 열리지 않는다.
+#
+# 생성 후 bootstrap-vpn.sh 로 tailscale 을 설치한다.
+#
+# 주의: 비특권 LXC 에는 /dev/net/tun 이 없어 tailscale 이 터널을 만들지 못한다.
+# Proxmox 호스트의 /etc/pve/lxc/103.conf 에 아래 두 줄을 넣고 컨테이너를
+# 재시작해야 한다. proxmox_lxc 리소스로는 표현할 수 없는 부분이라 수동이다.
+#
+#   lxc.cgroup2.devices.allow: c 10:200 rwm
+#   lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
+resource "proxmox_lxc" "vpn" {
+  target_node = var.target_node
+  hostname    = "vpn-01"
+  vmid        = 103
+  ostemplate  = "local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
+  # LXC 콘솔 로그인용. 실제 접속은 SSH 공개키로 한다.
+  password     = var.runner_password
+  unprivileged = true
+
+  ssh_public_keys = var.ssh_public_key
+
+  cores  = 1
+  memory = 512
+
+  # 집 밖에서 이 노드로 나가므로 호스트 재부팅 후 자동 기동되어야 한다.
+  onboot = true
+  start  = true
+
+  rootfs {
+    storage = "local-lvm"
+    size    = "4G"
+  }
+  network {
+    name   = "eth0"
+    bridge = "vmbr0"
+    ip     = "192.168.0.103/24"
+    gw     = "192.168.0.1"
+  }
+
+  # 내부 이름을 볼 수 있도록 dns-01 을 먼저 본다.
+  # dns-01 이 죽어도 인터넷은 되도록 공용 DNS 를 뒤에 둔다.
+  nameserver = "192.168.0.102 8.8.8.8"
+
+  lifecycle {
+    ignore_changes = [
+      password,
+      ssh_public_keys,
+    ]
+  }
+}

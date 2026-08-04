@@ -23,6 +23,9 @@ Proxmox VE 위에 홈랩 VM과 LXC를 Terraform으로 프로비저닝한다.
 │  │  ┌─────────────────────────┐  ┌───────────────┐ │   │
 │  │  │ GitHub Runner (LXC .101)│  │ DNS (LXC .102)│ │   │
 │  │  └─────────────────────────┘  └───────────────┘ │   │
+│  │  ┌─────────────────────────┐                    │   │
+│  │  │ Tailscale exit (LXC.103)│                    │   │
+│  │  └─────────────────────────┘                    │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -68,6 +71,7 @@ Proxmox VE 위에 홈랩 VM과 LXC를 Terraform으로 프로비저닝한다.
 | k3s-master-01 | 192.168.0.151 | 쿠버네티스 컨트롤플레인 |
 | GitHub Runner (LXC) | 192.168.0.101 | CI self-hosted runner |
 | dns-01 (LXC) | 192.168.0.102 | 내부 DNS (dnsmasq) |
+| vpn-01 (LXC) | 192.168.0.103 | Tailscale exit node |
 | Home Assistant | 192.168.0.111 | 스마트홈 |
 
 **IP 대역**
@@ -82,7 +86,7 @@ Proxmox VE 위에 홈랩 VM과 LXC를 Terraform으로 프로비저닝한다.
 
 | 범위 | 역할 |
 |---|---|
-| `1XX` | Core 인프라 (`101` GitHub Runner, `102` 내부 DNS) |
+| `1XX` | Core 인프라 (`101` GitHub Runner, `102` 내부 DNS, `103` VPN) |
 | `2XX` | k3s 클러스터 (`20X` 마스터, `21X` 워커) |
 | `3XX` | 스마트홈/IoT |
 | `9XX` | OS 템플릿 (`90X` Linux, `91X` 특수 OS) |
@@ -104,6 +108,7 @@ Proxmox VE 위에 홈랩 VM과 LXC를 Terraform으로 프로비저닝한다.
 |---|---|---|---|---|
 | github-runner-01 | 101 | 192.168.0.101 | 1GB | GitHub Actions runner, 이미지 빌드 |
 | dns-01 | 102 | 192.168.0.102 | 512MB | 내부 DNS |
+| vpn-01 | 103 | 192.168.0.103 | 512MB | Tailscale exit node |
 
 VM 메모리는 고정 점유고, LXC는 cgroup 상한이라 실제 쓰는 만큼만 잡는다.
 16GB 중 VM 두 대가 13GB를 가져가므로 LXC를 늘릴 때는 남은 몫을 확인해야 한다.
@@ -137,6 +142,7 @@ LXC는 cloud-init을 지원하지 않는다. `terraform apply`로 컨테이너�
 |---|---|---|
 | `github-runner-01` (101) | `bootstrap-runner.sh` | GitHub Actions runner, 이미지 빌드 |
 | `dns-01` (102) | `bootstrap-dns.sh` | 내부 DNS |
+| `vpn-01` (103) | `bootstrap-vpn.sh` | Tailscale exit node |
 
 ### github-runner-01
 
@@ -186,6 +192,33 @@ dnsmasq를 설치하고 스크립트에 정의된 레코드를 서빙한다. 나
 러너와 합치지 않은 이유는 역할 분리 때문이기도 하고, 러너 LXC가 메모리 1GB로
 이미지 빌드까지 돌려서 빌드 중에 집 전체 DNS가 눌릴 수 있어서다.
 
+### vpn-01
+
+Tailscale exit node. 해외에서 이 노드를 exit node로 지정하면 인터넷 트래픽이
+집을 거쳐 나가서 한국 IP를 쓴다. subnet router가 아니므로 내부망은 열리지 않는다.
+
+**먼저 Proxmox 호스트에서 아래를 실행해야 한다.** 비특권 LXC에는 `/dev/net/tun`이
+없어 tailscaled가 터널을 만들지 못한다.
+
+```bash
+cat >> /etc/pve/lxc/103.conf <<'EOF'
+lxc.cgroup2.devices.allow: c 10:200 rwm
+lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
+EOF
+pct restart 103
+```
+
+`proxmox_lxc` 리소스로는 표현할 수 없어 수동으로 남는 부분이다. 그래서 여기와
+스크립트 주석에 적어둔다.
+
+```bash
+bash bootstrap-vpn.sh
+```
+
+IP 포워딩을 켜고 tailscale을 설치한 뒤 `--advertise-exit-node`로 올린다.
+출력되는 로그인 URL을 열어 승인하고, 관리 콘솔의 Machines → vpn-01 →
+Edit route settings에서 exit node를 승인하면 클라이언트에서 선택할 수 있다.
+
 ---
 
 ## Local Setup
@@ -201,7 +234,6 @@ dnsmasq를 설치하고 스크립트에 정의된 레코드를 서빙한다. 나
 
 ## Roadmap
 
-- [ ] Tailscale exit node 구성 (해외에서 한국 IP 사용, dns-01에 얹을 예정)
 - [ ] k3s 워커 노드 추가 (데스크탑)
 - [ ] Prometheus + Grafana 모니터링 스택
 - [ ] ArgoCD Rollouts 카나리 배포 전략
