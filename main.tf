@@ -19,7 +19,7 @@ resource "proxmox_vm_qemu" "k3s_master" {
     cores   = 2
     sockets = 1
   }
-  memory = 6144
+  memory = 10240
 
   network {
     id     = 0
