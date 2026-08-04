@@ -153,7 +153,24 @@ The GitHub Actions self-hosted runner (LXC `github-runner-01`) requires manual b
 After the LXC is created via `terraform apply`, SSH into the runner and run:
 
 ```bash
+# packages only
 bash bootstrap.sh
+
+# packages + register a runner for a repo
+bash bootstrap.sh https://github.com/Ohjinn/homelab-iac <REGISTRATION_TOKEN>
 ```
 
-This installs: `unzip`, `nodejs`, `curl`, `wget`, `git`, `terraform`
+This installs:
+
+| | |
+|---|---|
+| Base packages | `unzip`, `nodejs`, `curl`, `wget`, `git`, `terraform` |
+| Container tooling | `docker.io`, `docker-buildx` — workflows build images on this runner |
+| Runner | downloads `actions-runner`, registers it, installs the systemd service |
+
+The registration token is short-lived (about an hour) so it cannot be committed.
+Get one from the repo's **Settings → Actions → Runners → New self-hosted runner**.
+
+Run the script again with a different repo URL to add another runner; each repo
+gets its own directory (`actions-runner-<repo>`) and its own systemd service, so a
+single LXC can serve several repositories.
