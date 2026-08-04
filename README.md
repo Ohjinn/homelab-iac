@@ -164,9 +164,13 @@ This installs:
 
 | | |
 |---|---|
-| Base packages | `unzip`, `nodejs`, `curl`, `wget`, `git`, `terraform` |
+| Base packages | `unzip`, `nodejs`, `curl`, `wget`, `git` |
 | Container tooling | `docker.io`, `docker-buildx` — workflows build images on this runner |
 | Runner | downloads `actions-runner`, registers it, installs the systemd service |
+
+Terraform itself is not installed on the runner. The workflow pulls its own pinned
+version via `hashicorp/setup-terraform`, so a system-wide copy would only be a
+second place to keep the version in sync.
 
 The registration token is short-lived (about an hour) so it cannot be committed.
 Get one from the repo's **Settings → Actions → Runners → New self-hosted runner**.

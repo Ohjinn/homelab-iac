@@ -15,7 +15,6 @@
 
 set -e
 
-TERRAFORM_VERSION="1.13.0"
 RUNNER_VERSION="2.336.0"
 RUNNER_USER="github-runner"
 
@@ -27,14 +26,9 @@ echo "=== Installing base packages ==="
 apt-get update -y
 apt-get install -y unzip nodejs curl wget git
 
-echo "=== Installing Terraform ${TERRAFORM_VERSION} ==="
-if ! terraform version 2>/dev/null | head -1 | grep -q "v${TERRAFORM_VERSION}\$"; then
-  wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -O /tmp/terraform.zip
-  unzip -o /tmp/terraform.zip -d /usr/local/bin/
-  rm /tmp/terraform.zip
-  chmod +x /usr/local/bin/terraform
-fi
-terraform version
+# Terraform is deliberately not installed here. The workflow provisions its own
+# pinned version through hashicorp/setup-terraform, so a system-wide copy would
+# only be a second place to keep the version in sync.
 
 # Workflows on this runner build container images, so Docker is part of the
 # runner's baseline. buildx is separate on Ubuntu 24.04 and `docker build`
