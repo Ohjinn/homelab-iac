@@ -15,7 +15,7 @@
 #   lxc.cgroup2.devices.allow: c 10:200 rwm
 #   lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
 #   EOF
-#   pct restart 103
+#   pct reboot 103
 #
 # The proxmox_lxc resource cannot express those lines, so this stays a manual
 # step. It is documented here and in README rather than left as silent drift.
@@ -25,7 +25,7 @@ set -e
 if [ ! -c /dev/net/tun ]; then
   echo "ERROR: /dev/net/tun is missing."
   echo "Add the two lxc.* lines to /etc/pve/lxc/103.conf on the Proxmox host"
-  echo "and run 'pct restart 103', then run this script again."
+  echo "and run 'pct reboot 103', then run this script again."
   exit 1
 fi
 
@@ -40,6 +40,10 @@ sysctl -p /etc/sysctl.d/99-tailscale.conf
 
 echo "=== Installing Tailscale ==="
 export DEBIAN_FRONTEND=noninteractive
+# A fresh LXC template ships without curl, and the installer needs it.
+apt-get update -y
+apt-get install -y curl ca-certificates
+
 if ! command -v tailscale >/dev/null; then
   curl -fsSL https://tailscale.com/install.sh | sh
 fi

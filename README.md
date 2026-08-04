@@ -205,7 +205,7 @@ cat >> /etc/pve/lxc/103.conf <<'EOF'
 lxc.cgroup2.devices.allow: c 10:200 rwm
 lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
 EOF
-pct restart 103
+pct reboot 103
 ```
 
 `proxmox_lxc` 리소스로는 표현할 수 없어 수동으로 남는 부분이다. 그래서 여기와
