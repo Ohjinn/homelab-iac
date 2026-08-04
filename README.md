@@ -20,9 +20,9 @@ Manages VM/LXC provisioning via Terraform, with GitOps-based CD through ArgoCD (
 │  │  │ (bare metal)│  │ Master   │  │ (VM / .111) │ │   │
 │  │  │    .200     │  │  .151    │  └─────────────┘ │   │
 │  │  └─────────────┘  └──────────┘                  │   │
-│  │  ┌─────────────────────────┐                    │   │
-│  │  │ GitHub Runner (LXC .101)│                    │   │
-│  │  └─────────────────────────┘                    │   │
+│  │  ┌─────────────────────────┐  ┌──────────────┐ │   │
+│  │  │ GitHub Runner (LXC .101)│  │ DNS (LXC .102)│ │   │
+│  │  └─────────────────────────┘  └──────────────┘ │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -68,6 +68,7 @@ Manages VM/LXC provisioning via Terraform, with GitOps-based CD through ArgoCD (
 | k3s-master-01 | 192.168.0.151 | Kubernetes control plane |
 | GitHub Runner (LXC) | 192.168.0.101 | CI self-hosted runner |
 | Home Assistant | 192.168.0.111 | Smart home controller |
+| Internal DNS (LXC) | 192.168.0.102 | dnsmasq — local records + upstream forwarding |
 
 **IP Allocation:**
 - `192.168.0.10–99` — DHCP
@@ -80,7 +81,7 @@ Manages VM/LXC provisioning via Terraform, with GitOps-based CD through ArgoCD (
 
 | Range | Role |
 |---|---|
-| `1XX` | Core infra / non-cluster (e.g. `101` GitHub Runner) |
+| `1XX` | Core infra / non-cluster (`101` GitHub Runner, `102` Internal DNS) |
 | `2XX` | k3s cluster (`20X` masters, `21X` workers) |
 | `3XX` | Smart home / IoT (e.g. `301` HAOS) |
 | `9XX` | OS templates (`90X` Linux, `91X` special OS) |
@@ -92,13 +93,14 @@ Manages VM/LXC provisioning via Terraform, with GitOps-based CD through ArgoCD (
 ### VMs (Proxmox QEMU)
 | Name | VMID | IP | OS | Role |
 |---|---|---|---|---|
-| k3s-master-01 | 201 | 192.168.0.151 | Rocky Linux 9 | Kubernetes master |
-| ha-core-01 | 301 | 192.168.0.111 | Home Assistant OS | Smart home |
+| k3s-master-01 | 151 | 192.168.0.151 | Rocky Linux 9 | Kubernetes master |
+| ha-core-01 | 111 | 192.168.0.111 | Home Assistant OS | Smart home |
 
 ### LXC Containers
 | Name | VMID | IP | Role |
 |---|---|---|---|
 | github-runner-01 | 101 | 192.168.0.101 | GitHub Actions self-hosted runner |
+| dns-01 | 102 | 192.168.0.102 | Internal DNS (dnsmasq) |
 
 ---
 
@@ -146,18 +148,26 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for documented issues and root caus
 
 > **Note:** This project uses HCP Terraform Cloud as the backend. You will need a free HCP Terraform account and a workspace configured to run locally.
 
-## Runner Bootstrap
+## LXC Bootstrap
 
-The GitHub Actions self-hosted runner (LXC `github-runner-01`) requires manual bootstrapping after creation, as LXC containers do not support cloud-init.
+LXC containers do not support cloud-init, so each one is provisioned by a
+role-specific script after `terraform apply` creates it.
+
+| Container | Script | Role |
+|---|---|---|
+| `github-runner-01` (101) | `bootstrap-runner.sh` | GitHub Actions runner, container builds |
+| `dns-01` (102) | `bootstrap-dns.sh` | Internal DNS for the home network |
+
+### github-runner-01
 
 After the LXC is created via `terraform apply`, SSH into the runner and run:
 
 ```bash
 # packages only
-bash bootstrap.sh
+bash bootstrap-runner.sh
 
 # packages + register a runner for a repo
-bash bootstrap.sh https://github.com/Ohjinn/homelab-iac <REGISTRATION_TOKEN>
+bash bootstrap-runner.sh https://github.com/Ohjinn/homelab-iac <REGISTRATION_TOKEN>
 ```
 
 This installs:
@@ -178,3 +188,20 @@ Get one from the repo's **Settings → Actions → Runners → New self-hosted r
 Run the script again with a different repo URL to add another runner; each repo
 gets its own directory (`actions-runner-<repo>`) and its own systemd service, so a
 single LXC can serve several repositories.
+
+### dns-01
+
+The router (ipTIME) can only forward DNS - it cannot hold custom local records -
+so internal names live here instead.
+
+```bash
+bash bootstrap-dns.sh
+```
+
+This installs dnsmasq, serves the records listed in the script, and forwards
+everything else upstream. After running it, point the router's DHCP DNS server
+at `192.168.0.102` so LAN clients use it.
+
+Names defined here are deliberately absent from public DNS. Adding a Cloudflare
+record for one of them would expose the service through the tunnel; keeping them
+internal-only means they resolve at home and nowhere else.
